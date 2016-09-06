@@ -29,6 +29,7 @@ import org.apache.hadoop.yarn.client.api.NMClient;
 import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.Records;
+import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
@@ -87,11 +88,30 @@ public class HelloYarn {
 			System.out.println("Links size: " + links.size());
 
 			for (String url : links) {
-				Document d = Jsoup.connect(url).get();
-				String text = d.body().text();
-				Document doc = Jsoup.parse(text);
+				String content = getTextFromUrl(url);
+//				String content = null;
+//				//try {
+//					Document d = Jsoup.connect(url).ignoreHttpErrors(true).timeout(500).get();
+//					String text = d.body().text();
+//					Document doc = Jsoup.parse(text);
+//					content = doc.text();
+//			//	} catch (HttpStatusException e) {
+//			      //  e.printStackTrace();
+//			        if (content.isEmpty()) {
+//						content = url.split(".com/")[1].replace(".html", "").replace("-", " ");
+//						System.out.println("words from url: " + content);
+//					}
+			 //   }
+				
+				
+//				
+//				System.out.println("content; " + content);
+//				if (content.isEmpty()) {
+//					content = url.split(".com/")[1].replace(".html", "").replace("-", " ");
+//					System.out.println("words from url: " + content);
+//				}
 
-				topWords = getAllWords(doc.text()).stream().map(String::toLowerCase)
+				topWords = getAllWords(content).stream().map(String::toLowerCase)
 						.collect(groupingBy(Function.identity(), counting())).entrySet().stream()
 						.sorted(Map.Entry.<String, Long>comparingByValue(Collections.reverseOrder())
 								.thenComparing(Map.Entry.comparingByKey()))
@@ -105,7 +125,7 @@ public class HelloYarn {
 				}
 			}
 
-			System.out.println("WP STEP 3 " + totalTopWords.size());
+			System.out.println("totalTopWords.size() " + totalTopWords.size());
 
 			try {
 				Path ptOut = new Path(Constants.OUTPUT_FILE);
@@ -117,7 +137,6 @@ public class HelloYarn {
 				BufferedWriter brOut = new BufferedWriter(new OutputStreamWriter(fsOut.create(ptOut, true)));
 				brOut.write(header);
 				brOut.write("\n");
-				System.out.println("STEP 4");
 				for (int i = 0; i < lines.size(); i++) {
 
 					String currentLine = lines.get(i);
@@ -144,8 +163,6 @@ public class HelloYarn {
 					}
 					brOut.write("\n");
 				}
-				System.out.println("STEP 5");
-
 				brOut.close();
 			} catch (Exception e) {
 				System.out.println("exception 1: " + e.getMessage() + e);
@@ -188,7 +205,6 @@ public class HelloYarn {
 	}
 
 	public static void main(String[] args) {
-	//	String stopWordsFile = args[0];
 		HelloYarn helloYarn = new HelloYarn();
 		helloYarn.execute();
 		
@@ -211,6 +227,23 @@ public class HelloYarn {
 		} catch (Exception e) {
 			System.out.println("Exception while reading stop words file: " + e.getMessage());
 		}
+	}
+	
+	private String getTextFromUrl(String url) {
+		String content = null;
+		try {
+			Document d = Jsoup.connect(url).ignoreHttpErrors(true).timeout(500).get();
+			String text = d.body().text();
+			Document doc = Jsoup.parse(text);
+			content = doc.text();
+		} catch (IOException e) {
 
+			content = url.split(".com/")[1].replace(".html", "").replace("-", " ");
+			System.out.println("words from url: " + content);
+	        e.printStackTrace();
+	        
+	    }
+		
+		return content;
 	}
 }
