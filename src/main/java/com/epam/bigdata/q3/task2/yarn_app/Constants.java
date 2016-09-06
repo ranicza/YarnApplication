@@ -24,4 +24,6 @@ public class Constants {
 	  public static final String INPUT_FILE = "hdfs://sandbox.hortonworks.com:8020/tmp/admin/homework2/tags.input.txt";
 
 	  public static final String OUTPUT_FILE = "hdfs://sandbox.hortonworks.com:8020/tmp/admin/homework2/tags.out.txt";
+	  
+	  public static final String STOPWORDS_FILE = "hdfs://sandbox.hortonworks.com:8020/tmp/admin/homework2/stopWords.txt";
 }
