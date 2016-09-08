@@ -125,15 +125,9 @@ public class ApplicationMaster {
 			}
 
 			if (!appJarPath.isEmpty() && (appJarTimestamp <= 0 || appJarPathLen <= 0)) {
-				LOG.error("Illegal values in env for shell script path" + ", path=" + appJarPath + ", len="
-						+ appJarPathLen + ", timestamp=" + appJarTimestamp);
 				throw new IllegalArgumentException("Illegal values in env for shell script path");
 			}
 		}
-
-		LOG.info("Application master for app" + ", appId=" + appAttemptID.getApplicationId().getId()
-				+ ", clusterTimestamp=" + appAttemptID.getApplicationId().getClusterTimestamp() + ", attemptId="
-				+ appAttemptID.getAttemptId());
 
 		containerMemory = Integer.parseInt(cliParser.getOptionValue("container_memory", "10"));
 		containerVirtualCores = Integer.parseInt(cliParser.getOptionValue("container_vcores", "1"));
@@ -208,8 +202,6 @@ public class ApplicationMaster {
 
 				ContainerLaunchContext appContainer = createContainerLaunchContext(appMasterJar, containerEnv,
 						allocatedContainers);
-				LOG.info("Launching container " + allocatedContainers);
-
 				nmClient.startContainer(container, appContainer);
 			}
 			for (ContainerStatus status : response.getCompletedContainersStatuses()) {
@@ -228,8 +220,6 @@ public class ApplicationMaster {
 			}
 			Thread.sleep(100);
 		}
-
-		LOG.info("Completed containers:" + completedContainers);
 
 		// Un-register with ResourceManager
 		amRMClient.unregisterApplicationMaster(FinalApplicationStatus.SUCCEEDED, "", "");

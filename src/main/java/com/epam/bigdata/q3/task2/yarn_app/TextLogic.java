@@ -64,8 +64,6 @@ public class TextLogic {
 			content = doc.text();
 		} catch (IOException e) {
 			content = url.split(_COM)[1].replace(_HTML, "").replace(HYPHEN, SPACE);
-			System.out.println(WORDS_URL + content);
-			System.out.println(ERROR_URL + e.getMessage());
 		}
 		return content;
 	}
