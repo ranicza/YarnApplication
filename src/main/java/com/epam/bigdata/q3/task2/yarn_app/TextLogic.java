@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -14,17 +13,24 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.FileSystem;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.apache.hadoop.conf.Configuration;
 
 public class TextLogic {
 	
 	private static final String URL_PATTERN = "(http[s]*:[^\\s\\r\\n]+)";
 	private static final String _COM = ".com/";
 	private static final String _HTML = ".html";
-	
-	private static final String ERROR_URL = "Exception in extracting text from url: ";
 	private static final String WORDS_URL = "words from url: ";
 	private static final String HYPHEN = "-";
+	private static final String NEWLINE = "\n";
+	private static final String SPLIT_BY = "\\s+";
+	private static final String SPACE = " ";
+	private static final String COMMA = ",";
+	
+	private static final String ERROR_URL = "Exception in extracting text from url: ";
+	private static final String ERROR_READ ="Exception during reading file: ";
+	private static final String ERROR_WRITE = "Exception during write to file: ";
+	
+	private static String header;
 	
 	/**
 	 * Get all links from text.
@@ -57,40 +63,78 @@ public class TextLogic {
 			Document doc = Jsoup.parse(text);
 			content = doc.text();
 		} catch (IOException e) {
-			content = url.split(_COM)[1].replace(_HTML, "").replace(HYPHEN, " ");
+			content = url.split(_COM)[1].replace(_HTML, "").replace(HYPHEN, SPACE);
 			System.out.println(WORDS_URL + content);
 			System.out.println(ERROR_URL + e.getMessage());
 		}
 		return content;
 	}
 	
+	/**
+	 * Get count of all the lines from the file.
+	 * 
+	 * @param file
+	 * @return
+	 * @throws IOException
+	 * @throws URISyntaxException
+	 */
     public static long linesCount (String file) throws IOException, URISyntaxException {
-        Configuration conf = new Configuration();
-        conf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
-        conf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
-        FileSystem fileSystem = FileSystem.get(new URI("hdfs://sandbox.hortonworks.com:8020"), conf);
+        FileSystem fileSystem = FileLogic.getFS();
         Path path = new Path(file);
         BufferedReader br = new BufferedReader(new InputStreamReader(fileSystem.open(path)));
         int linesCount = 0;
         while (br.readLine() != null) {
             linesCount++;
-        }
-        
+        }      
         System.out.println("Lines count: " + (linesCount - 1));
         return linesCount - 1;
     }
     
-    public static void writeTextToFile(int offset, String header, List<String> lines, List<List<String>> topWords){
+    /**
+     * Read file to array of lines.
+     * 
+     * @param lines
+     * @param offset
+     * @param count
+     */
+    public static void readFromFile( List<String> lines, int offset, int count) {
+    	int currentLine = 0;
+		try {
+			BufferedReader br = FileLogic.initReader(Constants.INPUT_FILE);
+			String line = br.readLine();
+			header = line;
+			line = br.readLine();
+
+			while (line != null && currentLine < offset + count) {
+	            if (currentLine >= offset) {
+	                lines.add(line.trim());
+	            }
+	            line = br.readLine();
+	            currentLine++;
+	        }
+		} catch (IOException e) {
+			System.out.println(ERROR_READ + e.getMessage() + e);
+		}	
+    }
+    
+    /**
+     * Write content to file.
+     * 
+     * @param offset
+     * @param lines
+     * @param topWords
+     */
+    public static void writeToFile(int offset,List<String> lines, List<List<String>> topWords){
 		try {				
 	    	BufferedWriter brOut = FileLogic.initWriter(Constants.OUTPUT_FILE + "_" + offset + ".txt");			
 	    	
 	    	brOut.write(header);
-			brOut.write("\n");		
+			brOut.write(NEWLINE);		
 			
 			for (int i = 0; i < lines.size(); i++) {
 
 				String curLine = lines.get(i);
-				String[] params = curLine.split("\\s+");
+				String[] params = curLine.split(SPLIT_BY);
 
 				for (int j = 0; j < params.length; j++) {
 					if (j == 1) {
@@ -98,22 +142,22 @@ public class TextLogic {
 						for (int k = 0; k < currentTopWords.size(); k++) {
 							brOut.write(currentTopWords.get(k));					
 							if (k < (currentTopWords.size() - 1)) {
-								brOut.write(",");
+								brOut.write(COMMA);
 							}
 						}
-						brOut.write(" ");
+						brOut.write(SPACE);
 					}
 					brOut.write(params[j]);
 					if (j < (params.length - 1)) {
-						brOut.write(" ");
+						brOut.write(SPACE);
 					}
 				}
-				brOut.write("\n");
+				brOut.write(NEWLINE);
 			}
 			brOut.close();			
-		} catch (Exception e) {
-			System.out.println("Exception: " + e.getMessage() + e);
-		}
-		
+		} catch (IOException e) {
+			System.out.println(ERROR_WRITE + e.getMessage() + e);
+		}		
     }
+    
 }

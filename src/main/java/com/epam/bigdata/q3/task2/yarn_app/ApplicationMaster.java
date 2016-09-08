@@ -268,7 +268,7 @@ public class ApplicationMaster {
 		appContainer.setLocalResources(Collections.singletonMap(Constants.AM_JAR_NAME, appMasterJar));
 		appContainer.setEnvironment(containerEnv);
 		appContainer.setCommands(Collections
-				.singletonList("$JAVA_HOME/bin/java" + " -Xmx256M" + " com.epam.bigdata.q3.task2.yarn_app.HelloYarn "
+				.singletonList("$JAVA_HOME/bin/java" + " -Xmx256M" + " com.epam.bigdata.q3.task2.yarn_app.YarnMain "
 						+ offset + " " + count + " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>"
 						+ ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
 

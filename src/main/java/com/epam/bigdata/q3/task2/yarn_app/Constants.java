@@ -18,7 +18,6 @@ public class Constants {
 	   */
 	  public static final String AM_JAR_LENGTH = "AM_JAR_LENGTH";
 
-
 	  public static final String AM_JAR_NAME = "AppMaster.jar";
 	  
 	  public static final String INPUT_FILE = "hdfs://sandbox.hortonworks.com:8020/tmp/admin/homework2/input.txt";
