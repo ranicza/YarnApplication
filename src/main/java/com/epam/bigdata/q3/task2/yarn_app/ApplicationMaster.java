@@ -40,6 +40,8 @@ public class ApplicationMaster {
 
 	  // Priority of the request
 	  private int requestPriority;
+	  
+	  private long linesCount;
 
 	  // Location of shell script ( obtained from info set in env )
 	  // Shell script path in fs
@@ -202,7 +204,10 @@ public class ApplicationMaster {
 	      for (Container container : response.getAllocatedContainers()) {
 	        allocatedContainers++;
 
-	        ContainerLaunchContext appContainer = createContainerLaunchContext(appMasterJar, containerEnv);
+	        // Get amount of all the lines in the file.
+	        linesCount = TextLogic.linesCount(Constants.INPUT_FILE);
+	        
+	        ContainerLaunchContext appContainer = createContainerLaunchContext(appMasterJar, containerEnv, allocatedContainers);
 	        LOG.info("Launching container " + allocatedContainers);
 
 	        nmClient.startContainer(container, appContainer);
@@ -254,7 +259,16 @@ public class ApplicationMaster {
 	   * @return
 	   */
 	  private ContainerLaunchContext createContainerLaunchContext(LocalResource appMasterJar,
-	            Map<String, String> containerEnv) {
+	            Map<String, String> containerEnv, int allocatedContainers) {
+		  long offset, count;
+	        if (allocatedContainers < numTotalContainers){
+	            count = Math.round(linesCount/numTotalContainers);
+	        } else {
+	            count = linesCount - Math.round(linesCount/numTotalContainers)*(numTotalContainers - 1);
+	        }
+	        
+	        offset = Math.round(linesCount/numTotalContainers)*(allocatedContainers - 1);
+	        
 	    ContainerLaunchContext appContainer =
 	        Records.newRecord(ContainerLaunchContext.class);
 	    appContainer.setLocalResources(
@@ -264,7 +278,7 @@ public class ApplicationMaster {
 	        Collections.singletonList(
 	            "$JAVA_HOME/bin/java" +
 	                " -Xmx256M" +
-	                " com.epam.bigdata.q3.task2.yarn_app.HelloYarn" +
+	                " com.epam.bigdata.q3.task2.yarn_app.HelloYarn " + offset + " " + count +
 	                " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" +
 	                " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"
 	        )

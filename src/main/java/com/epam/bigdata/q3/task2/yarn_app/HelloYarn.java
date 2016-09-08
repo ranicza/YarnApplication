@@ -1,6 +1,5 @@
 package com.epam.bigdata.q3.task2.yarn_app;
 
-import java.util.ArrayList;
 import java.util.regex.Pattern;
 
 import org.apache.hadoop.fs.Path;
@@ -39,25 +38,38 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 
 public class HelloYarn {
-	private static final long MEGABYTE = 1024L * 1024L;
-	private Set<String> stopWords = new HashSet();
 	
+	private int offset;
+	private int count;
+	    
+	//private static final long MEGABYTE = 1024L * 1024L;
+	private Set<String> stopWords = new HashSet();
+
 	public HelloYarn() {
 		System.out.println("HelloYarn!");
 	}
+	
+    public HelloYarn(int offset, int count) {
+        this.offset = offset;
+        this.count = count;
+        System.out.println("WordCount!");
+    }
 
-	public static long bytesToMegabytes(long bytes) {
-		return bytes / MEGABYTE;
-	}
+//	public static long bytesToMegabytes(long bytes) {
+//		return bytes / MEGABYTE;
+//	}
 
 	private void execute() {
-		initStopWords();
+		// Initialize a set with words for excluding.
+		WordLogic.initStopWords(stopWords);
+		
+		List<String> links = new ArrayList<String>();
+		List<String> topWords = null;
+		List<List<String>> totalTopWords = new ArrayList<>();
+		
+		Path pt = new Path(Constants.INPUT_FILE);
+		
 		try {
-			List<String> links = new ArrayList<String>();
-			List<String> topWords = null;
-			List<List<String>> totalTopWords = new ArrayList<>();
-
-			Path pt = new Path(Constants.INPUT_FILE);
 
 			Configuration conf = new Configuration();
 			conf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
@@ -67,18 +79,29 @@ public class HelloYarn {
 			BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(pt)));
 			List<String> lines = new ArrayList<String>();
 
+			 int currentLine = 0;
+			 
 			String line = br.readLine();
 			String header = line;
 			line = br.readLine();
-			while (line != null) {
-				lines.add(line.trim());
-				line = br.readLine();
-			}
+//			while (line != null) {
+//				lines.add(line.trim());
+//				line = br.readLine();
+//			}
+			
+			while (line != null && currentLine < offset + count) {
+	            if (currentLine >= offset) {
+	                lines.add(line.trim());
+	            }
+	            line = br.readLine();
+	            currentLine++;
+	        }
+			
 
 			System.out.println("Lines size: " + lines.size());
 
 			for (String item : lines) {
-				String link = extractLinks(item);
+				String link = TextLogic.extractLinks(item);
 				if (link != null) {
 					links.add(link);
 					System.out.println("Link: " + link);
@@ -88,30 +111,9 @@ public class HelloYarn {
 			System.out.println("Links size: " + links.size());
 
 			for (String url : links) {
-				String content = getTextFromUrl(url);
-//				String content = null;
-//				//try {
-//					Document d = Jsoup.connect(url).ignoreHttpErrors(true).timeout(500).get();
-//					String text = d.body().text();
-//					Document doc = Jsoup.parse(text);
-//					content = doc.text();
-//			//	} catch (HttpStatusException e) {
-//			      //  e.printStackTrace();
-//			        if (content.isEmpty()) {
-//						content = url.split(".com/")[1].replace(".html", "").replace("-", " ");
-//						System.out.println("words from url: " + content);
-//					}
-			 //   }
+				String content = TextLogic.getTextFromUrl(url);
 				
-				
-//				
-//				System.out.println("content; " + content);
-//				if (content.isEmpty()) {
-//					content = url.split(".com/")[1].replace(".html", "").replace("-", " ");
-//					System.out.println("words from url: " + content);
-//				}
-
-				topWords = getAllWords(content).stream().map(String::toLowerCase)
+				topWords = WordLogic.getAllWords(content, stopWords).stream().map(String::toLowerCase)
 						.collect(groupingBy(Function.identity(), counting())).entrySet().stream()
 						.sorted(Map.Entry.<String, Long>comparingByValue(Collections.reverseOrder())
 								.thenComparing(Map.Entry.comparingByKey()))
@@ -128,7 +130,7 @@ public class HelloYarn {
 			System.out.println("totalTopWords.size() " + totalTopWords.size());
 
 			try {
-				Path ptOut = new Path(Constants.OUTPUT_FILE);
+				Path ptOut = new Path(Constants.OUTPUT_FILE + offset);
 				Configuration confOut = new Configuration();
 				conf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
 				conf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
@@ -137,22 +139,23 @@ public class HelloYarn {
 				BufferedWriter brOut = new BufferedWriter(new OutputStreamWriter(fsOut.create(ptOut, true)));
 				brOut.write(header);
 				brOut.write("\n");
+			
+				
 				for (int i = 0; i < lines.size(); i++) {
 
-					String currentLine = lines.get(i);
-					System.out.println("currentLine: " + currentLine);
-					String[] params = currentLine.split("\\s+");
+					String curLine = lines.get(i);
+					System.out.println("currentLine: " + curLine);
+					String[] params = curLine.split("\\s+");
 
 					for (int j = 0; j < params.length; j++) {
 						if (j == 1) {
 							List<String> currentTopWords = totalTopWords.get(i);
 							System.out.println("currentTopWords: " + currentTopWords);
 							for (int k = 0; k < currentTopWords.size(); k++) {
-								brOut.write(currentTopWords.get(k));
-								System.out.println("currentTopWords.get(k): " + currentTopWords.get(k));
+								brOut.write(currentTopWords.get(k));					
 								if (k < (currentTopWords.size() - 1)) {
-									brOut.write(",");				
-									}
+									brOut.write(",");
+								}
 							}
 							brOut.write(" ");
 						}
@@ -163,6 +166,26 @@ public class HelloYarn {
 					}
 					brOut.write("\n");
 				}
+				
+//				 for (int i = 0; i <= lines.size()-1; i++){
+//			            String curLine = lines.get(i);
+//			            String totalWords = "";
+//			            List<String> words = totalTopWords.get(i);
+//			            for (int j = 0; j < words.size(); j++){
+//			                if (j > 0){
+//			                    totalWords += ",";
+//			                }
+//			                totalWords += words.get(j);
+//			            }
+//			            String text = curLine.replaceFirst("\\s", " " + totalWords);
+//			            brOut.write(text);
+//			            brOut.write("\n");
+//			        }
+				
+				
+				
+				
+				
 				brOut.close();
 			} catch (Exception e) {
 				System.out.println("exception 1: " + e.getMessage() + e);
@@ -172,78 +195,80 @@ public class HelloYarn {
 		}
 	}
 
-	// Get all links from text
-	private String extractLinks(String line) {
-		String result = null;
-		Pattern pattern = Pattern.compile("(http[s]*:[^\\s\\r\\n]+)", Pattern.DOTALL);
-		Matcher matcher = pattern.matcher(line);
+//	// Get all links from text
+//	private String extractLinks(String line) {
+//		String result = null;
+//		Pattern pattern = Pattern.compile("(http[s]*:[^\\s\\r\\n]+)", Pattern.DOTALL);
+//		Matcher matcher = pattern.matcher(line);
+//
+//		while (matcher.find()) {
+//			result = matcher.group();
+//		}
+//		return result;
+//	}
 
-		while (matcher.find()) {
-			result = matcher.group();
-		}
-		return result;
-	}
-
-	// Get all words from text
-	public List<String> getAllWords(String text) {
-		List<String> words = new ArrayList<String>();
-		StringTokenizer tokenizer = new StringTokenizer(text, " .,?!:;()<>[]\b\t\n\f\r\"\'");
-
-		while (tokenizer.hasMoreTokens()) {
-			words.add(tokenizer.nextToken().toUpperCase());
-		}
-		words = cleanWords(text.toUpperCase());
-		return words;
-	}
-
-	// Get all correct words
-	private List<String> cleanWords(String text) {
-		List<String> correctWords = Pattern.compile("\\W").splitAsStream(text).filter((s -> !s.isEmpty()))
-				.filter(w -> !Pattern.compile("\\d+").matcher(w).matches()).collect(toList());
-		correctWords = correctWords.stream().filter(w -> !stopWords.contains(w)).collect(toList());
-		return correctWords;
-	}
+//	// Get all words from text
+//	public List<String> getAllWords(String text) {
+//		List<String> words = new ArrayList<String>();
+//		StringTokenizer tokenizer = new StringTokenizer(text, " .,?!:;()<>[]\b\t\n\f\r\"\'");
+//
+//		while (tokenizer.hasMoreTokens()) {
+//			words.add(tokenizer.nextToken().toUpperCase());
+//		}
+//		words = cleanWords(text.toUpperCase());
+//		return words;
+//	}
+//
+//	// Get all correct words
+//	private List<String> cleanWords(String text) {
+//		List<String> correctWords = Pattern.compile("\\W").splitAsStream(text).filter((s -> !s.isEmpty()))
+//				.filter(w -> !Pattern.compile("\\d+").matcher(w).matches()).collect(toList());
+//		correctWords = correctWords.stream().filter(w -> !stopWords.contains(w)).collect(toList());
+//		return correctWords;
+//	}
 
 	public static void main(String[] args) {
-		HelloYarn helloYarn = new HelloYarn();
+        String offset = args[0];
+        String count = args[1];
+        
+		HelloYarn helloYarn = new HelloYarn(Integer.valueOf(offset), Integer.valueOf(count));
 		helloYarn.execute();
-		
+
 	}
+
+//	private void initStopWords() {
+//		Path file = new Path(Constants.STOPWORDS_FILE);
+//		try {
+//			Configuration conf = new Configuration();
+//			conf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
+//			conf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
+//
+//			FileSystem fs = FileSystem.get(new URI("hdfs://sandbox.hortonworks.com:8020"), conf);
+//			BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(file)));
+//
+//			String stopWord = null;
+//			while ((stopWord = br.readLine()) != null) {
+//				stopWords.add(stopWord.trim().toUpperCase());
+//			}
+//		} catch (Exception e) {
+//			System.out.println("Exception while reading stop words file: " + e.getMessage());
+//		}
+//	}
+
+//	private String getTextFromUrl(String url) {
+//		String content = null;
+//		try {
+//			Document d = Jsoup.connect(url).ignoreHttpErrors(true).timeout(500).get();
+//			String text = d.body().text();
+//			Document doc = Jsoup.parse(text);
+//			content = doc.text();
+//		} catch (IOException e) {
+//			content = url.split(".com/")[1].replace(".html", "").replace("-", " ");
+//			System.out.println("words from url: " + content);
+//			System.out.println("Exception in extracting text from url: " + e.getMessage());
+//		}
+//		return content;
+//	}
 	
-	private void initStopWords(){
-		Path file = new Path(Constants.STOPWORDS_FILE);
-		try{			
-			Configuration conf = new Configuration();
-			conf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
-			conf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
-
-			FileSystem fs = FileSystem.get(new URI("hdfs://sandbox.hortonworks.com:8020"), conf);
-			BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(file)));
-
-			String stopWord = null; 
-			while ((stopWord = br.readLine()) != null) { 
-				stopWords.add(stopWord.trim().toUpperCase());
-			}
-		} catch (Exception e) {
-			System.out.println("Exception while reading stop words file: " + e.getMessage());
-		}
-	}
 	
-	private String getTextFromUrl(String url) {
-		String content = null;
-		try {
-			Document d = Jsoup.connect(url).ignoreHttpErrors(true).timeout(500).get();
-			String text = d.body().text();
-			Document doc = Jsoup.parse(text);
-			content = doc.text();
-		} catch (IOException e) {
-
-			content = url.split(".com/")[1].replace(".html", "").replace("-", " ");
-			System.out.println("words from url: " + content);
-	        e.printStackTrace();
-	        
-	    }
-		
-		return content;
-	}
 }
