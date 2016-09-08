@@ -39,44 +39,41 @@ import static java.util.stream.Collectors.toList;
 
 public class HelloYarn {
 	
+	// Offset of lines from the file for certain container.
 	private int offset;
+	
+	// Count of lines from the file for certain container.
 	private int count;
 	    
-	//private static final long MEGABYTE = 1024L * 1024L;
 	private Set<String> stopWords = new HashSet();
 
-	public HelloYarn() {
-		System.out.println("HelloYarn!");
-	}
+	public HelloYarn() {}
 	
     public HelloYarn(int offset, int count) {
         this.offset = offset;
         this.count = count;
-        System.out.println("WordCount!");
     }
 
-//	public static long bytesToMegabytes(long bytes) {
-//		return bytes / MEGABYTE;
-//	}
-
 	private void execute() {
-		// Initialize a set with words for excluding.
+		// Initialize a set with stop words for excluding.
 		WordLogic.initStopWords(stopWords);
 		
 		List<String> links = new ArrayList<String>();
 		List<String> topWords = null;
 		List<List<String>> totalTopWords = new ArrayList<>();
 		
-		Path pt = new Path(Constants.INPUT_FILE);
+		//Path pt = new Path(Constants.INPUT_FILE);
 		
 		try {
-
-			Configuration conf = new Configuration();
-			conf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
-			conf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
-
-			FileSystem fs = FileSystem.get(new URI("hdfs://sandbox.hortonworks.com:8020"), conf);
-			BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(pt)));
+//			Configuration conf = new Configuration();
+//			conf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
+//			conf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
+//
+//			FileSystem fs = FileSystem.get(new URI("hdfs://sandbox.hortonworks.com:8020"), conf);
+//			BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(pt)));
+			
+			BufferedReader br = FileLogic.initReader(Constants.INPUT_FILE);
+					
 			List<String> lines = new ArrayList<String>();
 
 			 int currentLine = 0;
@@ -130,13 +127,16 @@ public class HelloYarn {
 			System.out.println("totalTopWords.size() " + totalTopWords.size());
 
 			try {
-				Path ptOut = new Path(Constants.OUTPUT_FILE + offset);
-				Configuration confOut = new Configuration();
-				conf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
-				conf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
-
-				FileSystem fsOut = FileSystem.get(new URI("hdfs://sandbox.hortonworks.com:8020"), confOut);
-				BufferedWriter brOut = new BufferedWriter(new OutputStreamWriter(fsOut.create(ptOut, true)));
+//				Path ptOut = new Path(Constants.OUTPUT_FILE + offset);
+//				Configuration confOut = new Configuration();
+//				conf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
+//				conf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
+//
+//				FileSystem fsOut = FileSystem.get(new URI("hdfs://sandbox.hortonworks.com:8020"), confOut);
+//				BufferedWriter brOut = new BufferedWriter(new OutputStreamWriter(fsOut.create(ptOut, true)));
+				
+				BufferedWriter brOut = FileLogic.initWriter(Constants.OUTPUT_FILE + "_" + offset + ".txt");
+						
 				brOut.write(header);
 				brOut.write("\n");
 			
@@ -144,13 +144,11 @@ public class HelloYarn {
 				for (int i = 0; i < lines.size(); i++) {
 
 					String curLine = lines.get(i);
-					System.out.println("currentLine: " + curLine);
 					String[] params = curLine.split("\\s+");
 
 					for (int j = 0; j < params.length; j++) {
 						if (j == 1) {
 							List<String> currentTopWords = totalTopWords.get(i);
-							System.out.println("currentTopWords: " + currentTopWords);
 							for (int k = 0; k < currentTopWords.size(); k++) {
 								brOut.write(currentTopWords.get(k));					
 								if (k < (currentTopWords.size() - 1)) {
@@ -270,5 +268,20 @@ public class HelloYarn {
 //		return content;
 //	}
 	
-	
+//	private BufferedReader fileConnection(String path) {
+//		Path file = new Path(path);
+//		BufferedReader br = null;
+//		try {
+//			Configuration conf = new Configuration();
+//			conf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
+//			conf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
+//
+//			FileSystem fs = FileSystem.get(new URI("hdfs://sandbox.hortonworks.com:8020"), conf);
+//			br = new BufferedReader(new InputStreamReader(fs.open(file)));
+//
+//		} catch (Exception e) {
+//			System.out.println("Exception while reading stop words file: " + e.getMessage());
+//		}		
+//		return br;
+//	}
 }

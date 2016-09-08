@@ -23,7 +23,7 @@ public class Constants {
 	  
 	  public static final String INPUT_FILE = "hdfs://sandbox.hortonworks.com:8020/tmp/admin/homework2/input.txt";
 
-	  public static final String OUTPUT_FILE = "hdfs://sandbox.hortonworks.com:8020/tmp/admin/homework2/out.txt";
+	  public static final String OUTPUT_FILE = "hdfs://sandbox.hortonworks.com:8020/tmp/admin/homework2/out";
 	  
 	  public static final String STOPWORDS_FILE = "hdfs://sandbox.hortonworks.com:8020/tmp/admin/homework2/stopWords.txt";
 }

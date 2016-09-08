@@ -111,11 +111,11 @@ public class Client {
 	    opts.addOption("priority", true, "Application Priority. Default 0");
 	    opts.addOption("queue", true, "RM Queue in which this application is to be submitted");
 	    opts.addOption("timeout", true, "Application timeout in milliseconds");
-	    opts.addOption("master_memory", true, "Amount of memory in MB to be requested to run the application master");
-	    opts.addOption("master_vcores", true, "Amount of virtual cores to be requested to run the application master");
+	   // opts.addOption("master_memory", true, "Amount of memory in MB to be requested to run the application master");
+	    //opts.addOption("master_vcores", true, "Amount of virtual cores to be requested to run the application master");
 	    opts.addOption("jar", true, "Jar file containing the application master");
-	    opts.addOption("container_memory", true, "Amount of memory in MB to be requested to run the HelloYarn");
-	    opts.addOption("container_vcores", true, "Amount of virtual cores to be requested to run the HelloYarn");
+	   // opts.addOption("container_memory", true, "Amount of memory in MB to be requested to run the HelloYarn");
+	   // opts.addOption("container_vcores", true, "Amount of virtual cores to be requested to run the HelloYarn");
 	    opts.addOption("num_containers", true, "No. of containers on which the HelloYarn needs to be executed");
 	    opts.addOption("help", false, "Print usage");
 	  }
