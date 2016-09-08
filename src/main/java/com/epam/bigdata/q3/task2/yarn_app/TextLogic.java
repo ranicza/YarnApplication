@@ -1,10 +1,12 @@
 package com.epam.bigdata.q3.task2.yarn_app;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -76,5 +78,42 @@ public class TextLogic {
         
         System.out.println("Lines count: " + (linesCount - 1));
         return linesCount - 1;
+    }
+    
+    public static void writeTextToFile(int offset, String header, List<String> lines, List<List<String>> topWords){
+		try {				
+	    	BufferedWriter brOut = FileLogic.initWriter(Constants.OUTPUT_FILE + "_" + offset + ".txt");			
+	    	
+	    	brOut.write(header);
+			brOut.write("\n");		
+			
+			for (int i = 0; i < lines.size(); i++) {
+
+				String curLine = lines.get(i);
+				String[] params = curLine.split("\\s+");
+
+				for (int j = 0; j < params.length; j++) {
+					if (j == 1) {
+						List<String> currentTopWords = topWords.get(i);
+						for (int k = 0; k < currentTopWords.size(); k++) {
+							brOut.write(currentTopWords.get(k));					
+							if (k < (currentTopWords.size() - 1)) {
+								brOut.write(",");
+							}
+						}
+						brOut.write(" ");
+					}
+					brOut.write(params[j]);
+					if (j < (params.length - 1)) {
+						brOut.write(" ");
+					}
+				}
+				brOut.write("\n");
+			}
+			brOut.close();			
+		} catch (Exception e) {
+			System.out.println("Exception: " + e.getMessage() + e);
+		}
+		
     }
 }

@@ -1,5 +1,7 @@
 package com.epam.bigdata.q3.task2.yarn_app;
 
+import static java.util.stream.Collectors.counting;
+import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 
 import java.io.BufferedReader;
@@ -7,10 +9,13 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import org.apache.hadoop.conf.Configuration;
@@ -31,23 +36,6 @@ public class WordLogic {
 		} catch (IOException e) {
 			System.out.println("Exception while reading stop words file: " + e.getMessage());
 		}
-
-		
-//		try {
-//			Configuration conf = new Configuration();
-//			conf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
-//			conf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
-//
-//			FileSystem fs = FileSystem.get(new URI("hdfs://sandbox.hortonworks.com:8020"), conf);
-//			BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(file)));
-//
-//			String stopWord = null;
-//			while ((stopWord = br.readLine()) != null) {
-//				stopWords.add(stopWord.trim().toUpperCase());
-//			}
-//		} catch (Exception e) {
-//			System.out.println("Exception while reading stop words file: " + e.getMessage());
-//		}
 	}
 	
 	// Get all words from text
@@ -69,4 +57,21 @@ public class WordLogic {
 		correctWords = correctWords.stream().filter(w -> !stopWords.contains(w)).collect(toList());
 		return correctWords;
 	}
+	
+	/**
+	 * Add top words to the collection.
+	 * 
+	 * @param content
+	 * @param topWords
+	 * @param stopWords
+	 */
+	public static void getTopWords(String content, List<List<String>> topWords, Set<String> stopWords) {
+		List<String> words = WordLogic.getAllWords(content, stopWords).stream().map(String::toLowerCase)
+				.collect(groupingBy(Function.identity(), counting())).entrySet().stream()
+				.sorted(Map.Entry.<String, Long>comparingByValue(Collections.reverseOrder())
+						.thenComparing(Map.Entry.comparingByKey()))
+				.limit(10).map(Map.Entry::getKey).collect(toList());
+		topWords.add(words);
+	}
+	
 }
